@@ -1,7 +1,20 @@
 # SkyQuote ✈️ — Buscador e Cotação de Passagens Aéreas
 
 Aplicação Next.js (App Router) + TypeScript + Tailwind para pesquisar e comparar passagens em **dinheiro** e
-**disponibilidade award (milhas) via Seats.aero**, com geração de **cotação em PDF**.
+**disponibilidade award (milhas) via Seats.aero**, com geração de **cotação em PDF** e **orçamento para o cliente**
+(modelo Renda & Rotas, com logo).
+
+## Funcionalidades
+
+- **Busca por data** — retorna todos os voos possíveis da rota, de **todas as companhias**; filtro por companhia,
+  paradas e dinheiro/milhas nos resultados. Seats.aero opcional.
+- **Datas flexíveis** — informe origem, destino e um período de ida (e de volta): mostra os melhores valores de
+  **ida por data e companhia** e depois os de **volta por data e companhia** (calendário de preços, top 6 e matriz
+  data × companhia). Até 31 dias por período na simulação / 15 no modo ao vivo.
+- **Gerar Orçamento** — dados do cliente (nome, WhatsApp, e-mail — opcionais), escolha da opção de voo (ou ida +
+  volta das datas flexíveis), custo automático editável e **lucro da empresa** (no total ou por passageiro).
+  O PDF mostra ao cliente apenas o valor final. Logo em `public/brand/logo-renda-rotas.png`.
+- **Cotação em PDF** — documento técnico comparativo das opções selecionadas.
 
 ## Rodando
 
@@ -19,15 +32,19 @@ Funciona 100% sem chaves: o **Mock Engine** gera dados realistas e determinísti
 app/
   page.tsx                 # dashboard (busca, resultados, filtros, seleção, PDF)
   api/search/route.ts      # POST — orquestra as buscas no servidor
+  api/flex/route.ts        # POST — busca de datas flexíveis
   api/config/route.ts      # GET  — informa quais chaves existem no .env.local
 components/                # SearchPanel, AirportInput, PassengerSelector, AirlineSelector,
                            # FlightCard (boarding pass), SelectionBar, SettingsModal, Header...
 lib/
   airports.ts  airlines.ts # base de aeroportos (coord. + fuso IANA) e malha das cias / programas
-  pdf.ts                   # geração do PDF (jsPDF + jspdf-autotable)
+  pdf.ts                   # cotação técnica em PDF (jsPDF + jspdf-autotable)
+  budgetPdf.ts             # orçamento ao cliente (modelo Renda & Rotas)
+  trip.ts                  # monta a viagem a partir das opções escolhidas
   time.ts format.ts rng.ts types.ts settings.ts
 services/
   flightSearch.ts          # camada de serviço (modo simulação x ao vivo, fallback, ordenação)
+  flexSearch.ts            # varredura de datas: melhor oferta por data e companhia
   searchClient.ts          # cliente do front
   providers/
     mock.ts                # Mock Engine (rotas via hubs, fusos, preços dinâmicos, awards)

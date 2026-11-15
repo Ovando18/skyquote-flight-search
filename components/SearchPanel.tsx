@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import AirportInput from './AirportInput';
 import PassengerSelector from './PassengerSelector';
-import AirlineSelector from './AirlineSelector';
+import SourceSelector from './SourceSelector';
 import { CABIN_LABELS, type CabinClass, type SearchParams, type TripType } from '@/lib/types';
 import { todayISO } from '@/lib/time';
 
@@ -175,19 +175,11 @@ export default function SearchPanel({ value: p, onChange, onSubmit, loading, err
 
       <div className="my-5 h-px bg-gradient-to-r from-transparent via-line-strong to-transparent" />
 
-      <AirlineSelector
-        selected={p.airlines}
-        onChange={(airlines) => set({ airlines })}
-        seatsAero={p.includeSeatsAero}
-        onSeatsAero={(includeSeatsAero) => set({ includeSeatsAero })}
-      />
+      <SourceSelector seatsAero={p.includeSeatsAero} onSeatsAero={(includeSeatsAero) => set({ includeSeatsAero })} />
 
       <div className="mt-6 flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className={clsx('text-sm', error ? 'text-red-400' : 'text-ink-faint')} role={error ? 'alert' : undefined}>
-          {error ??
-            `${p.airlines.length} companhia${p.airlines.length === 1 ? '' : 's'}${
-              p.includeSeatsAero ? ' + Seats.aero' : ''
-            } selecionada${p.airlines.length === 1 && !p.includeSeatsAero ? '' : 's'}`}
+          {error ?? `Todas as companhias${p.includeSeatsAero ? ' + disponibilidade em milhas (Seats.aero)' : ''}`}
         </p>
         <button type="submit" className="btn-primary px-8 py-3 text-base" disabled={loading}>
           {loading ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}

@@ -9,7 +9,7 @@
  *  - disponibilidade award (Seats.aero) por programa de fidelidade
  */
 import { getAirport, distanceKm, type Airport } from '@/lib/airports';
-import { getAirline, LOYALTY_PROGRAMS, type Airline, type LoyaltyProgram } from '@/lib/airlines';
+import { AIRLINES, getAirline, LOYALTY_PROGRAMS, type Airline, type LoyaltyProgram } from '@/lib/airlines';
 import { createRng, type Rng } from '@/lib/rng';
 import { localToUtc, utcToLocal, dayDiff, todayISO, naiveMs } from '@/lib/time';
 import {
@@ -430,11 +430,14 @@ export function mockCashOffers(params: SearchParams): MockResult {
   const roundtrip = params.tripType === 'roundtrip' && !!params.returnDate;
   const pax = params.adults + params.children;
 
-  for (const code of params.airlines) {
+  // Sem filtro de companhias = todas as companhias que operam a rota
+  const explicit = params.airlines.length > 0;
+  const codes = explicit ? params.airlines : AIRLINES.map((a) => a.code);
+  for (const code of codes) {
     const al = getAirline(code);
     if (!al) continue;
     if (!al.cabins.includes(params.cabin)) {
-      notes.push(`${al.shortName} não oferece a cabine ${CABIN_SHORT[params.cabin]} nesta rota.`);
+      if (explicit) notes.push(`${al.shortName} não oferece a cabine ${CABIN_SHORT[params.cabin]} nesta rota.`);
       continue;
     }
     const outs = sliceOptions(al, o.code, d.code, params.departDate, 'outbound', params.cabin, domestic);
@@ -442,7 +445,7 @@ export function mockCashOffers(params: SearchParams): MockResult {
       ? sliceOptions(al, d.code, o.code, params.returnDate!, 'inbound', params.cabin, domestic)
       : [];
     if (!outs.length || (roundtrip && !ins.length)) {
-      notes.push(`${al.shortName} não possui tarifas para ${o.code}-${d.code} nas datas pesquisadas.`);
+      if (explicit) notes.push(`${al.shortName} não possui tarifas para ${o.code}-${d.code} nas datas pesquisadas.`);
       continue;
     }
 

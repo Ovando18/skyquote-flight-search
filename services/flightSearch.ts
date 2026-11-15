@@ -47,7 +47,8 @@ export function validateParams(p: SearchParams): string | null {
   }
   if (!(p.adults >= 1 && p.adults <= 9) || !(p.children >= 0 && p.adults + p.children <= 9))
     return 'Quantidade de passageiros inválida (máximo 9).';
-  if (!p.airlines?.length && !p.includeSeatsAero) return 'Selecione ao menos uma companhia aérea ou o Seats.aero.';
+  if (!Array.isArray(p.airlines)) p.airlines = [];
+  if (p.includeCash === false && !p.includeSeatsAero) return 'Ative ao menos uma fonte: tarifas em dinheiro ou Seats.aero.';
   return null;
 }
 
@@ -75,8 +76,8 @@ export async function searchFlights(params: SearchParams, config: Partial<ApiCon
     providers.push({ provider: 'mock', simulated: true, count: r.offers.length });
   };
 
-  // ----- Tarifas em dinheiro
-  if (params.airlines.length) {
+  // ----- Tarifas em dinheiro (airlines vazio = todas as companhias)
+  if (params.includeCash !== false) {
     const runners: Runner[] = [];
     if (live) {
       if (keys.amadeusId && keys.amadeusSecret)
@@ -99,9 +100,13 @@ export async function searchFlights(params: SearchParams, config: Partial<ApiCon
         const p = runners[i].provider;
         if (res.status === 'fulfilled') {
           ok++;
-          const filtered = res.value.filter(
-            (o) => params.airlines.includes(o.airline) || o.slices.some((s) => s.segments.some((g) => params.airlines.includes(g.carrier))),
-          );
+          const filtered = params.airlines.length
+            ? res.value.filter(
+                (o) =>
+                  params.airlines.includes(o.airline) ||
+                  o.slices.some((s) => s.segments.some((g) => params.airlines.includes(g.carrier))),
+              )
+            : res.value;
           offers.push(...filtered);
           providers.push({ provider: p, simulated: filtered.some((o) => o.simulated), count: filtered.length });
         } else {
@@ -141,6 +146,7 @@ export async function searchFlights(params: SearchParams, config: Partial<ApiCon
   const seen = new Set<string>();
   const unique = offers.filter((o) => (seen.has(o.id) ? false : (seen.add(o.id), true)));
   unique.sort((a, b) => a.sortPrice - b.sortPrice || a.totalDurationMin - b.totalDurationMin);
+  for (const o of unique) o.passengers = { adults: params.adults, children: params.children };
 
   return {
     offers: unique,

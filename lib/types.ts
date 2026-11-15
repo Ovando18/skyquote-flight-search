@@ -12,8 +12,55 @@ export interface SearchParams {
   adults: number;
   children: number; // 2 a 11 anos
   cabin: CabinClass;
-  airlines: string[]; // códigos IATA das companhias selecionadas
+  /** Filtro opcional de companhias (IATA). Vazio = todas as companhias da rota. */
+  airlines: string[];
+  /** Incluir tarifas em dinheiro (padrão: true) */
+  includeCash?: boolean;
   includeSeatsAero: boolean;
+}
+
+/** Busca de datas flexíveis: melhores valores por data e companhia */
+export interface FlexParams {
+  tripType: TripType;
+  origin: string;
+  destination: string;
+  outStart: string;
+  outEnd: string;
+  retStart?: string;
+  retEnd?: string;
+  adults: number;
+  children: number;
+  cabin: CabinClass;
+  includeSeatsAero: boolean;
+}
+
+export interface FlexRow {
+  date: string;
+  /** chave = código IATA da cia ou "SEATS" (melhor resgate Seats.aero) */
+  cells: Record<string, FlightOffer>;
+}
+
+export interface FlexDirection {
+  direction: 'outbound' | 'inbound';
+  from: string;
+  to: string;
+  columns: string[];
+  rows: FlexRow[];
+}
+
+export interface FlexResponse {
+  outbound: FlexDirection;
+  inbound?: FlexDirection;
+  warnings: string[];
+  params: FlexParams;
+  searchedAt: string;
+}
+
+/** Dados do cliente para o orçamento */
+export interface ClientInfo {
+  name: string;
+  phone: string;
+  email: string;
 }
 
 export interface Segment {
@@ -85,6 +132,8 @@ export interface FlightOffer {
   seatsRemaining?: number;
   /** Valor usado na ordenação (BRL). Para milhas = equivalente estimado. */
   sortPrice: number;
+  /** Passageiros considerados no preço */
+  passengers?: { adults: number; children: number };
 }
 
 export interface ProviderRun {
