@@ -80,25 +80,50 @@ function RangeField({
         />
       </div>
       {!disabled && (
-        <div className="mt-1.5 flex gap-1.5">
-          {[30, 60, 90].filter((n) => n <= maxDays).map((n) => (
-            <button
-              key={n}
-              type="button"
-              onClick={() => onChange(start || min, addDays(start || min, n - 1))}
-              className={clsx(
-                'rounded-md border px-2 py-0.5 font-mono text-[11px] transition',
-                days === n ? 'border-horizon/60 bg-horizon/10 text-horizon' : 'border-line text-ink-muted hover:text-ink',
-              )}
+        <div className="mt-1.5 flex items-center gap-2">
+          <span className="text-[11px] text-ink-faint">Duração:</span>
+          <div className="relative">
+            <select
+              aria-label={`${label} - duração`}
+              className="appearance-none rounded-md border border-line bg-cockpit-800 py-1 pl-2 pr-7 font-mono text-[11px] text-ink outline-none transition hover:border-line-strong focus:border-horizon"
+              value={PERIOD_OPTIONS.includes(days) ? String(days) : 'custom'}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                if (n) onChange(start || min, addDays(start || min, n - 1));
+              }}
             >
-              {n} dias
-            </button>
-          ))}
+              {!PERIOD_OPTIONS.includes(days) && <option value="custom">Personalizado ({days} dias)</option>}
+              {PERIOD_OPTIONS.filter((n) => n <= maxDays).map((n) => (
+                <option key={n} value={n} className="bg-panel-2">
+                  {n} dias ({n / 30} {n === 30 ? 'mês' : 'meses'})
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted" />
+          </div>
+          <div className="hidden gap-1 sm:flex">
+            {[30, 90, 180, 360].filter((n) => n <= maxDays).map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => onChange(start || min, addDays(start || min, n - 1))}
+                className={clsx(
+                  'rounded-md border px-2 py-0.5 font-mono text-[11px] transition',
+                  days === n ? 'border-horizon/60 bg-horizon/10 text-horizon' : 'border-line text-ink-muted hover:text-ink',
+                )}
+              >
+                {n}d
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>
   );
 }
+
+/** Durações sugeridas: múltiplos de 30 dias até 12 meses */
+const PERIOD_OPTIONS = Array.from({ length: 12 }, (_, i) => (i + 1) * 30);
 
 const TRIP_TABS: { id: TripType; label: string; icon: React.ReactNode }[] = [
   { id: 'roundtrip', label: 'Ida e Volta', icon: <Repeat className="h-4 w-4" /> },

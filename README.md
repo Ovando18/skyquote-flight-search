@@ -10,7 +10,7 @@ Aplicação Next.js (App Router) + TypeScript + Tailwind para pesquisar e compar
   paradas e dinheiro/milhas nos resultados. Seats.aero opcional.
 - **Datas flexíveis** — informe origem, destino e um período de ida (e de volta): mostra os melhores valores de
   **ida por data e companhia** e depois os de **volta por data e companhia** (calendário de preços, top 6 e matriz
-  data × companhia). Até 90 dias por período: a varredura é feita em blocos (31 dias na simulação / 3 dias ao vivo por requisição) e a tela vai sendo preenchida durante a busca.
+  data × companhia). Até 360 dias (12 meses) por período, com seletor de duração em múltiplos de 30 dias: a varredura é feita em blocos (31 dias na simulação / 3 dias ao vivo por requisição) e a tela vai sendo preenchida durante a busca.
 - **Gerar Orçamento** — dados do cliente (nome, WhatsApp, e-mail — opcionais), escolha da opção de voo (ou ida +
   volta das datas flexíveis), custo automático editável e **lucro da empresa** (no total ou por passageiro).
   O PDF mostra ao cliente apenas o valor final. Logo em `public/brand/logo-renda-rotas.png`.
