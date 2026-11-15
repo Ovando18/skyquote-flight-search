@@ -8,7 +8,8 @@ import type { ClientInfo, FlightOffer } from '@/lib/types';
 import { CABIN_SHORT } from '@/lib/types';
 import { duration, money, points, shortDate, stopsLabel, time } from '@/lib/format';
 import { defaultBudgetSelection, deriveTrip, formatPhone, hasDateConflict, offerCostBRL } from '@/lib/trip';
-import { budgetTotals, COMPANY_NAME, LOGO_URL } from '@/lib/budgetPdf';
+import { budgetTotals } from '@/lib/budgetPdf';
+import { COMPANY_NAME, LOGO_URL } from '@/lib/brand';
 import { AirlineBadge, SeatsAeroSeal } from './AirlineBadge';
 
 interface Props {

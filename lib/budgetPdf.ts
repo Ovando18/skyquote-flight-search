@@ -21,8 +21,8 @@ const MUTED: RGB = [110, 116, 132];
 const LINE: RGB = [226, 222, 212];
 const CREAM: RGB = [252, 250, 246];
 
-export const COMPANY_NAME = 'Renda & Rotas';
-export const LOGO_URL = '/brand/logo-renda-rotas.png';
+import { COMPANY_NAME, LOGO_URL } from './brand';
+export { COMPANY_NAME, LOGO_URL };
 
 export interface BudgetInput {
   client: ClientInfo;

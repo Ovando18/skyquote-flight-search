@@ -7,6 +7,7 @@ export async function runSearch(params: SearchParams, config: ApiConfig): Promis
     body: JSON.stringify({ params, config }),
   });
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401) window.location.href = '/login';
   if (!res.ok) throw new Error(data?.error ?? `Erro ${res.status}`);
   return data as SearchResponse;
 }
@@ -27,6 +28,7 @@ export async function runFlexSearch(params: FlexParams, config: ApiConfig): Prom
     body: JSON.stringify({ params, config }),
   });
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401) window.location.href = '/login';
   if (!res.ok) throw new Error(data?.error ?? `Erro ${res.status}`);
   return data as FlexResponse;
 }

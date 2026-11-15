@@ -1,6 +1,6 @@
 'use client';
 
-import { Plane, Settings } from 'lucide-react';
+import { LogOut, Plane, Settings } from 'lucide-react';
 import clsx from 'clsx';
 import type { SearchMode } from '@/lib/types';
 
@@ -41,6 +41,18 @@ export default function Header({ mode, onOpenSettings }: { mode: SearchMode; onO
           >
             <Settings className="h-4 w-4" />
             <span className="hidden sm:inline">Configurar APIs</span>
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              await fetch('/api/logout', { method: 'POST' }).catch(() => null);
+              window.location.href = '/login';
+            }}
+            className="rounded-xl border border-line p-2 text-ink-muted transition hover:border-red-400/50 hover:text-red-300"
+            title="Sair"
+            aria-label="Sair"
+          >
+            <LogOut className="h-4 w-4" />
           </button>
         </div>
       </div>
