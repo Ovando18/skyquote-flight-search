@@ -32,6 +32,8 @@ export interface FlexParams {
   children: number;
   cabin: CabinClass;
   includeSeatsAero: boolean;
+  /** Varre apenas um sentido (usado na busca em blocos de datas) */
+  only?: 'outbound' | 'inbound';
 }
 
 export interface FlexRow {
@@ -49,7 +51,7 @@ export interface FlexDirection {
 }
 
 export interface FlexResponse {
-  outbound: FlexDirection;
+  outbound?: FlexDirection;
   inbound?: FlexDirection;
   warnings: string[];
   params: FlexParams;

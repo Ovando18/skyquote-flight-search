@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import clsx from 'clsx';
 import {
   AlertTriangle,
@@ -26,7 +26,7 @@ import { AirlineBadge } from '@/components/AirlineBadge';
 import { EmptyState, NoResults, RadarLoader } from '@/components/StatusScreens';
 import { useApiConfig } from '@/lib/settings';
 import { getAirline } from '@/lib/airlines';
-import { addDays, todayISO } from '@/lib/time';
+import { addDays, dayDiff, todayISO } from '@/lib/time';
 import { duration, money } from '@/lib/format';
 import { deriveTrip } from '@/lib/trip';
 import {
@@ -37,7 +37,9 @@ import {
   type SearchParams,
   type SearchResponse,
 } from '@/lib/types';
-import { runFlexSearch, runSearch } from '@/services/searchClient';
+import { runSearch } from '@/services/searchClient';
+import { flexTotalDays, runFlexChunked, type FlexProgress } from '@/services/flexClient';
+import { FLEX_MAX_PERIOD_DAYS } from '@/lib/flexConfig';
 
 type Tab = 'dates' | 'flex';
 type SortKey = 'price' | 'duration';
@@ -102,6 +104,8 @@ export default function Home() {
   const [flexParams, setFlexParams] = useState<FlexParams>(initialFlex);
   const [flex, setFlex] = useState<FlexResponse | null>(null);
   const [flexLoading, setFlexLoading] = useState(false);
+  const [flexProgress, setFlexProgress] = useState<FlexProgress | null>(null);
+  const flexCancel = useRef<{ cancelled: boolean }>({ cancelled: false });
   const [flexError, setFlexError] = useState<string | null>(null);
 
   // Seleção (compartilhada entre as abas)
@@ -135,15 +139,46 @@ export default function Home() {
     setFlexError(null);
     if (!flexParams.origin || !flexParams.destination) return setFlexError('Informe origem e destino.');
     if (flexParams.origin === flexParams.destination) return setFlexError('Origem e destino devem ser diferentes.');
+    const p: FlexParams =
+      flexParams.tripType === 'oneway' ? { ...flexParams, retStart: undefined, retEnd: undefined } : flexParams;
+    if (!p.outStart || !p.outEnd || p.outEnd < p.outStart) return setFlexError('Informe um período de ida válido.');
+    if (p.tripType === 'roundtrip' && (!p.retStart || !p.retEnd || p.retEnd < p.retStart))
+      return setFlexError('Informe um período de volta válido.');
+    const longest = Math.max(
+      dayDiff(p.outStart, p.outEnd) + 1,
+      p.retStart && p.retEnd ? dayDiff(p.retStart, p.retEnd) + 1 : 0,
+    );
+    if (longest > FLEX_MAX_PERIOD_DAYS)
+      return setFlexError(`Cada período pode ter no máximo ${FLEX_MAX_PERIOD_DAYS} dias.`);
+    const totalDays = flexTotalDays(p);
+    if (
+      config.mode === 'live' &&
+      totalDays > 15 &&
+      !window.confirm(
+        `Esta busca consulta ${totalDays} datas nas APIs ao vivo (cada data consome créditos, ex.: 1 consulta SerpApi por data). Deseja continuar?`,
+      )
+    )
+      return;
+
+    flexCancel.current = { cancelled: false };
     setFlexLoading(true);
+    setFlex(null);
+    setFlexProgress({ done: 0, total: totalDays });
     try {
-      const p: FlexParams =
-        flexParams.tripType === 'oneway' ? { ...flexParams, retStart: undefined, retEnd: undefined } : flexParams;
-      setFlex(await runFlexSearch(p, config));
+      await runFlexChunked(
+        p,
+        config,
+        (partial, progress) => {
+          setFlex(partial);
+          setFlexProgress(progress);
+        },
+        flexCancel.current,
+      );
     } catch (e) {
       setFlexError((e as Error).message);
     } finally {
       setFlexLoading(false);
+      setFlexProgress(null);
     }
   }, [flexParams, config]);
 
@@ -478,10 +513,30 @@ export default function Home() {
             onSubmit={searchFlex}
             loading={flexLoading}
             error={flexError}
-            maxDays={config.mode === 'live' ? 15 : 31}
+            maxDays={FLEX_MAX_PERIOD_DAYS}
           />
           <section className="mt-8 space-y-6" aria-live="polite">
-            {flexLoading ? (
+            {flexLoading && flexProgress && (
+              <div className="panel flex flex-wrap items-center gap-3 px-4 py-3">
+                <Radar className="h-5 w-5 animate-pulse text-radar" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold text-ink">
+                    Varrendo datas… <span className="font-mono text-radar">{flexProgress.done}</span>
+                    <span className="font-mono text-ink-muted"> / {flexProgress.total} dias</span>
+                  </div>
+                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-cockpit-800">
+                    <div
+                      className="h-full rounded-full bg-radar transition-all"
+                      style={{ width: `${Math.round((flexProgress.done / Math.max(flexProgress.total, 1)) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+                <button type="button" onClick={() => (flexCancel.current.cancelled = true)} className="btn-ghost py-1.5 text-xs">
+                  Parar
+                </button>
+              </div>
+            )}
+            {flexLoading && !flex ? (
               <RadarLoader route={`${flexParams.origin} ⇄ ${flexParams.destination} · varrendo datas`} />
             ) : !flex ? (
               <div className="panel px-6 py-12 text-center">
@@ -508,7 +563,7 @@ export default function Home() {
                     </ul>
                   </details>
                 )}
-                <FlexResults data={flex.outbound} selected={selectedIds} onToggle={toggle} />
+                {flex.outbound && <FlexResults data={flex.outbound} selected={selectedIds} onToggle={toggle} />}
                 {flex.inbound && <FlexResults data={flex.inbound} selected={selectedIds} onToggle={toggle} />}
               </>
             )}

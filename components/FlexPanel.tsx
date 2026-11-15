@@ -17,7 +17,7 @@ import AirportInput from './AirportInput';
 import PassengerSelector from './PassengerSelector';
 import SourceSelector from './SourceSelector';
 import { CABIN_LABELS, type CabinClass, type FlexParams, type TripType } from '@/lib/types';
-import { dayDiff, todayISO } from '@/lib/time';
+import { addDays, dayDiff, todayISO } from '@/lib/time';
 
 interface Props {
   value: FlexParams;
@@ -79,6 +79,23 @@ function RangeField({
           onChange={(e) => onChange(start, e.target.value)}
         />
       </div>
+      {!disabled && (
+        <div className="mt-1.5 flex gap-1.5">
+          {[30, 60, 90].filter((n) => n <= maxDays).map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => onChange(start || min, addDays(start || min, n - 1))}
+              className={clsx(
+                'rounded-md border px-2 py-0.5 font-mono text-[11px] transition',
+                days === n ? 'border-horizon/60 bg-horizon/10 text-horizon' : 'border-line text-ink-muted hover:text-ink',
+              )}
+            >
+              {n} dias
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -208,7 +225,7 @@ export default function FlexPanel({ value: p, onChange, onSubmit, loading, error
 
       <div className="mt-6 flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className={clsx('text-sm', error ? 'text-red-400' : 'text-ink-faint')} role={error ? 'alert' : undefined}>
-          {error ?? `Até ${maxDays} dias por período${maxDays < 31 ? ' no modo ao vivo (economia de créditos)' : ''}`}
+          {error ?? `Até ${maxDays} dias por período · os resultados aparecem à medida que as datas são consultadas`}
         </p>
         <button type="submit" className="btn-primary px-8 py-3 text-base" disabled={loading}>
           {loading ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <CalendarRange className="h-5 w-5" />}

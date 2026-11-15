@@ -4,9 +4,9 @@
  * Varre uma janela de datas para a ida (e outra para a volta) com buscas "somente ida"
  * e devolve, para cada data, a melhor oferta de cada companhia (+ melhor resgate Seats.aero).
  *
- * Simulação: janela de até 31 dias por sentido.
- * Ao vivo: cada data é uma chamada aos provedores — limitado a 15 datas por sentido para
- * preservar créditos de API (as datas excedentes são descartadas com aviso).
+ * Cada requisição cobre um bloco de datas (até 31 dias na simulação / 15 ao vivo).
+ * Períodos maiores (até FLEX_MAX_PERIOD_DAYS) são divididos em blocos pelo cliente
+ * (services/flexClient.ts), o que evita estourar o tempo limite das funções na hospedagem.
  */
 import type { ApiConfig, FlexDirection, FlexParams, FlexResponse, FlightOffer, SearchParams } from '@/lib/types';
 import { addDays, dayDiff } from '@/lib/time';
@@ -22,9 +22,11 @@ export function validateFlex(p: FlexParams): string | null {
   if (!/^[A-Z]{3}$/.test(p.origin ?? '') || !/^[A-Z]{3}$/.test(p.destination ?? ''))
     return 'Informe aeroportos de origem e destino válidos (código IATA).';
   if (p.origin === p.destination) return 'Origem e destino devem ser diferentes.';
-  if (!DATE_RE.test(p.outStart ?? '') || !DATE_RE.test(p.outEnd ?? '')) return 'Informe o período de ida.';
-  if (p.outEnd < p.outStart) return 'No período de ida, a data final deve ser posterior à inicial.';
-  if (p.tripType === 'roundtrip') {
+  if (p.only !== 'inbound') {
+    if (!DATE_RE.test(p.outStart ?? '') || !DATE_RE.test(p.outEnd ?? '')) return 'Informe o período de ida.';
+    if (p.outEnd < p.outStart) return 'No período de ida, a data final deve ser posterior à inicial.';
+  }
+  if (p.tripType === 'roundtrip' || p.only === 'inbound') {
     if (!DATE_RE.test(p.retStart ?? '') || !DATE_RE.test(p.retEnd ?? '')) return 'Informe o período de volta.';
     if (p.retEnd! < p.retStart!) return 'No período de volta, a data final deve ser posterior à inicial.';
   }
@@ -115,8 +117,11 @@ async function scanDirection(
 
 export async function searchFlex(p: FlexParams, config: Partial<ApiConfig>): Promise<FlexResponse> {
   const warnings: string[] = [];
-  const outbound = await scanDirection(p, config, 'outbound', warnings);
-  const inbound = p.tripType === 'roundtrip' ? await scanDirection(p, config, 'inbound', warnings) : undefined;
+  const outbound = p.only === 'inbound' ? undefined : await scanDirection(p, config, 'outbound', warnings);
+  const inbound =
+    p.only === 'inbound' || (p.tripType === 'roundtrip' && p.only !== 'outbound')
+      ? await scanDirection(p, config, 'inbound', warnings)
+      : undefined;
   return {
     outbound,
     inbound,
